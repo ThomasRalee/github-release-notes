@@ -18,6 +18,16 @@ runs:
         echo "PREVIOUS_TAG=${{ inputs.previous_tag }}" >> $GITHUB_ENV
         echo "REPO_URL=${{ inputs.repo_url }}" >> $GITHUB_ENV
 
+    - name: Increment version
+        id: increment_version
+        run: |
+          # Split the version into major, minor, patch components
+          IFS='.' read -r major minor patch <<< "${{ env.current_version }}"
+          # Increment the patch number
+          patch=$((patch + 1))
+          new_version="$major.$minor.$patch"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
     - name: Generate Release Notes
       id: generate_notes
       shell: bash
@@ -77,4 +87,4 @@ runs:
         echo "release_notes<<EOF" >> $GITHUB_ENV
         echo -e "$formatted_notes" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
-        echo $formatted_notes
+        echo "release_notes=${formatted_notes}" >> $GITHUB_OUTPUT
