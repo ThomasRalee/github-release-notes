@@ -90,3 +90,7 @@ runs:
         echo -e "$formatted_notes" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
         echo "release_notes=${formatted_notes}" >> $GITHUB_OUTPUT
+
+outputs:
+  new_version: ${new_version}
+  release_notes: ${formatted_notes}
