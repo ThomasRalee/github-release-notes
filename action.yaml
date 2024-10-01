@@ -9,68 +9,77 @@ inputs:
     description: "The URL of the repository"
     required: true
 
-jobs:
-  release-notes:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate Release Notes
-        id: generate_notes
-        run: |
-          previous_tag=${{ inputs.previous_tag }}
-          repo_url=${{ inputs.repo_url }}
+runs:
+  using: "composite"
+  steps:
+     - name: Set Up Variables
+      shell: bash
+      run: |
+        echo "PREVIOUS_TAG=${{ inputs.previous_tag }}" >> $GITHUB_ENV
+        echo "REPO_URL=${{ inputs.repo_url }}" >> $GITHUB_ENV
 
-          # Fetch all commits for processing
-          all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
-          formatted_notes=""
-          pr_commits=()
+    - name: Generate Release Notes
+      id: generate_notes
+      run: |
+        previous_tag="$PREVIOUS_TAG"
+        repo_url="$REPO_URL"
 
-          # Process the commit data to capture PR-related commits
-          while IFS='|' read -r commit_hash parent_hashes commit_message commit_author commit_email; do
-            # If this is a merge commit, extract PR number and parent hashes
-            if echo "$commit_message" | grep -q "Merge pull request"; then
-              pr_number=$(echo "$commit_message" | grep -oE "#[0-9]+")
-              pr_link="[${pr_number}](${repo_url}/pull/${pr_number:1})"
+        # Fetch all commits for processing
+        all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
+        formatted_notes=""
+        pr_commits=()
 
-              # Extract the parent hashes
-              read -r start_commit end_commit <<< "$parent_hashes"
+        # Process the commit data to capture PR-related commits
+        while IFS='|' read -r commit_hash parent_hashes commit_message commit_author commit_email; do
+          # If this is a merge commit, extract PR number and parent hashes
+          if echo "$commit_message" | grep -q "Merge pull request"; then
+            pr_number=$(echo "$commit_message" | grep -oE "#[0-9]+")
+            pr_link="[${pr_number}](${repo_url}/pull/${pr_number:1})"
 
-              # Start tracking commits for this PR
-              should_track=false
-              while IFS='|' read -r inner_commit_hash inner_rest; do
-                # Start tracking when we hit the end_commit
-                if [[ "$inner_commit_hash" == "$end_commit" ]]; then
-                  should_track=true
-                fi
+            # Extract the parent hashes
+            read -r start_commit end_commit <<< "$parent_hashes"
 
-                # Stop tracking when we reach the starting commit
-                if [[ "$inner_commit_hash" == "$start_commit" ]]; then
-                  break
-                fi
+            # Start tracking commits for this PR
+            should_track=false
+            while IFS='|' read -r inner_commit_hash inner_rest; do
+              # Start tracking when we hit the end_commit
+              if [[ "$inner_commit_hash" == "$end_commit" ]]; then
+                should_track=true
+              fi
 
-                # If we are tracking, add the commit to the PR commits array
-                if [ "$should_track" = true ]; then
-                  pr_commits+=("$inner_commit_hash")
-                fi
-              done <<< "$all_commits"
-            fi
-          done <<< "$all_commits"
+              # Stop tracking when we reach the starting commit
+              if [[ "$inner_commit_hash" == "$start_commit" ]]; then
+                break
+              fi
 
-          # Generate output for each commit
-          while IFS='|' read -r commit_hash _ commit_message commit_author commit_email; do
-            github_author_link="@${commit_author}"
+              # If we are tracking, add the commit to the PR commits array
+              if [ "$should_track" = true ]; then
+                pr_commits+=("$inner_commit_hash")
+              fi
+            done <<< "$all_commits"
+          fi
+        done <<< "$all_commits"
 
-            # Append the PR link if the commit is part of the PR-related commits
-            if [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
-              formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link} in ${pr_link}"
-            else
-              formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link}"
-            fi
-          done <<< "$all_commits"
+        # Generate output for each commit
+        while IFS='|' read -r commit_hash _ commit_message commit_author commit_email; do
+          github_author_link="@${commit_author}"
 
-          # Export the formatted notes to the GitHub environment
-          echo "release_notes<<EOF" >> $GITHUB_ENV
-          echo -e "$formatted_notes" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          # Append the PR link if the commit is part of the PR-related commits
+          if [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
+            formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link} in ${pr_link}"
+          else
+            formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link}"
+          fi
+        done <<< "$all_commits"
 
-    outputs:
-      release_notes: ${{ steps.generate_notes.outputs.release_notes }}
+        # Export the formatted notes to the GitHub environment
+        echo "release_notes<<EOF" >> $GITHUB_ENV
+        echo -e "$formatted_notes" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Set Outputs
+      shell: bash
+      run: echo "release_notes=${formatted_notes}" >> $GITHUB_OUTPUT
+
+  outputs:
+    release_notes: ${{ steps.generate_notes.outputs.release_notes }}
