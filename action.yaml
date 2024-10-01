@@ -19,15 +19,15 @@ runs:
     #     echo "REPO_URL=${{ inputs.repo_url }}" >> $GITHUB_ENV
 
     - name: Increment version
-        id: increment_version
-        shell: bash
-        run: |
-          # Split the version into major, minor, patch components
-          IFS='.' read -r major minor patch <<< "${{ inputs.previous_tag }}"
-          # Increment the patch number
-          patch=$((patch + 1))
-          new_version="$major.$minor.$patch"
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+      id: increment_version
+      shell: bash
+      run: |
+        # Split the version into major, minor, patch components
+        IFS='.' read -r major minor patch <<< "${{ inputs.previous_tag }}"
+        # Increment the patch number
+        patch=$((patch + 1))
+        new_version="$major.$minor.$patch"
+        echo "new_version=$new_version" >> $GITHUB_OUTPUT
 
     - name: Generate Release Notes
       id: generate_notes
