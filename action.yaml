@@ -88,7 +88,7 @@ runs:
         echo "release_notes<<EOF" >> $GITHUB_ENV
         echo -e "$formatted_notes" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
-        echo -e release_notes=${formatted_notes} >> $GITHUB_OUTPUT
+        echo release_notes=${formatted_notes} >> $GITHUB_OUTPUT
 
 outputs:
   new_version:
