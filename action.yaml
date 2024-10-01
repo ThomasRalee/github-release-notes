@@ -27,7 +27,7 @@ runs:
         # Increment the patch number
         patch=$((patch + 1))
         new_version="$major.$minor.$patch"
-        echo new version: $new_version
+        echo "new_version=${new_version}" >> $GITHUB_OUTPUT
 
     - name: Generate Release Notes
       id: generate_notes
@@ -88,7 +88,12 @@ runs:
         echo "release_notes<<EOF" >> $GITHUB_ENV
         echo -e "$formatted_notes" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
+        echo "release_notes=${formatted_notes}" >> $GITHUB_OUTPUT
 
 outputs:
-  new_version: ${{ env.new_version }}
-  release_notes: ${{ env.formatted_notes }}
+  new_version:
+    description: "Incremented github tag number"
+    value: ${{ steps.increment_version.outputs.new_version }}
+  release_notes:
+    description: "Incremented github tag number"
+    value: ${{ steps.generate_notes.outputs.release_notes }}
