@@ -88,7 +88,7 @@ runs:
         echo "release_notes<<EOF" >> $GITHUB_ENV
         echo -e "$formatted_notes" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
-        echo "release_notes=${formatted_notes}" >> $GITHUB_OUTPUT
+        echo -e release_notes=${formatted_notes} >> $GITHUB_OUTPUT
 
 outputs:
   new_version:
@@ -96,4 +96,4 @@ outputs:
     value: ${{ steps.increment_version.outputs.new_version }}
   release_notes:
     description: "Incremented github tag number"
-    value: "${{ steps.generate_notes.outputs.release_notes }}"
+    value: ${{ steps.generate_notes.outputs.release_notes }}
