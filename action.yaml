@@ -27,7 +27,8 @@ runs:
         # Increment the patch number
         patch=$((patch + 1))
         new_version="$major.$minor.$patch"
-        echo "new_version=$new_version" >> $GITHUB_OUTPUT
+        echo new version: $new_version
+        echo "new_version=${new_version}" >> $GITHUB_OUTPUT
 
     - name: Generate Release Notes
       id: generate_notes
