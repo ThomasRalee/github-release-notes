@@ -12,12 +12,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # - name: Set Up Variables
-    #   shell: bash
-    #   run: |
-    #     echo "PREVIOUS_TAG=${{ inputs.previous_tag }}" >> $GITHUB_ENV
-    #     echo "REPO_URL=${{ inputs.repo_url }}" >> $GITHUB_ENV
-
     - name: Increment version
       id: increment_version
       shell: bash
@@ -37,34 +31,41 @@ runs:
         repo_url="${{ inputs.repo_url }}"
 
         # Fetch all commits for processing
-        all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
-        formatted_notes=""
         pr_commits=()
+        formatted_notes=""
+        first_merge_commit_skipped=false
+        all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
 
         # Process the commit data to capture PR-related commits
         while IFS='|' read -r commit_hash parent_hashes commit_message commit_author commit_email; do
-          # If this is a merge commit, extract PR number and parent hashes
+          # Check for "Merge pull request" in commit message
           if echo "$commit_message" | grep -q "Merge pull request"; then
+            # Skip the first "Merge pull request" commit
+            if [ "$first_merge_commit_skipped" = false ]; then
+              first_merge_commit_skipped=true
+              continue
+            fi
+
             pr_number=$(echo "$commit_message" | grep -oE "#[0-9]+")
             pr_link="[${pr_number}](${repo_url}/pull/${pr_number:1})"
 
             # Extract the parent hashes
             read -r start_commit end_commit <<< "$parent_hashes"
 
-            # Start tracking commits for this PR
+            # Track commits related to this PR
             should_track=false
             while IFS='|' read -r inner_commit_hash inner_rest; do
-              # Start tracking when we hit the end_commit
+              # Start tracking from the end_commit
               if [[ "$inner_commit_hash" == "$end_commit" ]]; then
                 should_track=true
               fi
 
-              # Stop tracking when we reach the starting commit
+              # Stop tracking at the start_commit
               if [[ "$inner_commit_hash" == "$start_commit" ]]; then
                 break
               fi
 
-              # If we are tracking, add the commit to the PR commits array
+              # If tracking, add commit to PR-related array
               if [ "$should_track" = true ]; then
                 pr_commits+=("$inner_commit_hash")
               fi
@@ -77,7 +78,9 @@ runs:
           github_author_link="@${commit_author}"
 
           # Append the PR link if the commit is part of the PR-related commits
-          if [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
+          if [[ "$commit_message" == *"Merge pull request"* ]]; then
+              formatted_notes="${formatted_notes}"
+          elif [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
             formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link} in ${pr_link}"
           else
             formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link}"
