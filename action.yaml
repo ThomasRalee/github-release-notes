@@ -20,6 +20,7 @@ runs:
 
     - name: Generate Release Notes
       id: generate_notes
+      shell: bash
       run: |
         previous_tag="$PREVIOUS_TAG"
         repo_url="$REPO_URL"
@@ -77,9 +78,5 @@ runs:
         echo -e "$formatted_notes" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
 
-    - name: Set Outputs
-      shell: bash
-      run: echo "release_notes=${formatted_notes}" >> $GITHUB_OUTPUT
-
   outputs:
-    release_notes: ${{ steps.generate_notes.outputs.release_notes }}
+    release_notes: $formatted_notes
