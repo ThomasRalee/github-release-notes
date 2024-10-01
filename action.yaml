@@ -78,5 +78,5 @@ runs:
         echo -e "$formatted_notes" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
 
-  outputs:
-    release_notes: $formatted_notes
+outputs:
+  release_notes: $formatted_notes
