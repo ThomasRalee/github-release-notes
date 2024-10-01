@@ -85,10 +85,9 @@ runs:
         done <<< "$all_commits"
 
         # Export the formatted notes to the GitHub environment
-        echo "release_notes<<EOF" >> $GITHUB_ENV
-        echo -e "$formatted_notes" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
-        echo release_notes=${formatted_notes} >> $GITHUB_OUTPUT
+        echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+        echo -e "${formatted_notes}" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
 outputs:
   new_version:
