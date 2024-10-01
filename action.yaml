@@ -1,5 +1,5 @@
-name: "Generate github release notes"
-description: "Generate github release notes from git commits"
+name: "Generate GitHub Release Notes"
+description: "Generate GitHub release notes from git commits"
 
 inputs:
   previous_tag:
@@ -13,17 +13,15 @@ jobs:
   release-notes:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate release notes
+      - name: Generate Release Notes
         id: generate_notes
         run: |
           previous_tag=${{ inputs.previous_tag }}
           repo_url=${{ inputs.repo_url }}
 
           # Fetch all commits for processing
-          all_commits=$(git log $previous_tag..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
+          all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
           formatted_notes=""
-          pr_number=""
-          pr_link=""
           pr_commits=()
 
           # Process the commit data to capture PR-related commits
@@ -31,16 +29,14 @@ jobs:
             # If this is a merge commit, extract PR number and parent hashes
             if echo "$commit_message" | grep -q "Merge pull request"; then
               pr_number=$(echo "$commit_message" | grep -oE "#[0-9]+")
-              pr_link="[${pr_number}](\"${repo_url}/pull/${pr_number#'#'}\")"
+              pr_link="[${pr_number}](${repo_url}/pull/${pr_number:1})"
 
               # Extract the parent hashes
               read -r start_commit end_commit <<< "$parent_hashes"
 
               # Start tracking commits for this PR
               should_track=false
-              for inner_line in $all_commits; do
-                inner_commit_hash=$(echo "$inner_line" | cut -d'|' -f1)
-
+              while IFS='|' read -r inner_commit_hash inner_rest; do
                 # Start tracking when we hit the end_commit
                 if [[ "$inner_commit_hash" == "$end_commit" ]]; then
                   should_track=true
@@ -55,7 +51,7 @@ jobs:
                 if [ "$should_track" = true ]; then
                   pr_commits+=("$inner_commit_hash")
                 fi
-              done
+              done <<< "$all_commits"
             fi
           done <<< "$all_commits"
 
@@ -64,9 +60,7 @@ jobs:
             github_author_link="@${commit_author}"
 
             # Append the PR link if the commit is part of the PR-related commits
-            if [[ "$commit_message" == *"Merge pull request"* ]]; then
-              formatted_notes="${formatted_notes}"
-            elif [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
+            if [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
               formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link} in ${pr_link}"
             else
               formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link}"
