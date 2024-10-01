@@ -12,7 +12,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-     - name: Set Up Variables
+    - name: Set Up Variables
       shell: bash
       run: |
         echo "PREVIOUS_TAG=${{ inputs.previous_tag }}" >> $GITHUB_ENV
