@@ -16,6 +16,9 @@ outputs:
   release_notes:
     description: "Incremented github tag number"
     value: "${{ steps.generate_notes.outputs.release_notes }}"
+  bugsnag_version:
+    description: "The app version to use for Bugsnag"
+    value: ${{ steps.compute_bugsnag_app_version.outputs.app_version }}
 
 runs:
   using: "composite"
@@ -29,6 +32,7 @@ runs:
         # Increment the patch number
         patch=$((patch + 1))
         new_version="$major.$minor.$patch"
+        echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "new_version=${new_version}" >> $GITHUB_OUTPUT
 
     - name: Generate Release Notes
@@ -106,3 +110,16 @@ runs:
         echo "release_notes<<EOF" >> $GITHUB_OUTPUT
         echo -e "${formatted_notes}" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Compute Bugsnag App Version
+        id: compute_bugsnag_app_version
+        run: |
+          if [ "${steps.generate_notes.outputs.release_notes}" == "No new commits" ]; then
+            echo "app_version=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
+          fi
+          echo "release notes: ${{ steps.generate_notes.outputs.release_notes }}"
+          echo "previous version: ${{ inputs.previous_tag }}"
+          echo "new version: ${{ env.new_version }}"
+          echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
