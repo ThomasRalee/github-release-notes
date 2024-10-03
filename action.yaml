@@ -115,16 +115,21 @@ runs:
       id: compute_bugsnag_app_version
       shell: bash
       run: |
-        if [[ "${{ steps.generate_notes.outputs.release_notes }}" == "No new commits" ]]; then
-          echo "app_version=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
-        else
-          echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
+        # Assign new_version from earlier step output to a shell variable
+        new_version="${{ steps.increment_version.outputs.new_version }}"
+        release_notes="${{ steps.generate_notes.outputs.release_notes }}"
+
+        # Initialize app_version with new_version
+        app_version="$new_version"
+
+        # Conditional assignment based on release_notes output
+        if [[ "$release_notes" == "No new commits" ]]; then
+          app_version="${{ inputs.previous_tag }}"
         fi
 
-        echo $app_version
-        echo ${{app_version}}
+        # Set the app_version as an output
+        echo "app_version=$app_version" >> $GITHUB_OUTPUT
 
-        # Logging for debug purposes
-        echo "Release notes: ${{ steps.generate_notes.outputs.release_notes }}"
+        # Log for debug purposes
+        echo "Release notes: $release_notes"
         echo "Bugsnag version: $app_version"
-        echo "Bugsnag version: ${{app_version}}"
