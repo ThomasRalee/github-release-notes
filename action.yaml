@@ -9,6 +9,14 @@ inputs:
     description: "The URL of the repository"
     required: true
 
+outputs:
+  new_version:
+    description: "Incremented github tag number"
+    value: ${{ steps.increment_version.outputs.new_version }}
+  release_notes:
+    description: "Incremented github tag number"
+    value: "${{ steps.generate_notes.outputs.release_notes }}"
+
 runs:
   using: "composite"
   steps:
@@ -16,10 +24,12 @@ runs:
       id: increment_version
       shell: bash
       run: |
+        # Split the version into major, minor, patch components
         IFS='.' read -r major minor patch <<< "${{ inputs.previous_tag }}"
+        # Increment the patch number
         patch=$((patch + 1))
         new_version="$major.$minor.$patch"
-        echo "new_version=$new_version" >> $GITHUB_OUTPUT
+        echo "new_version=${new_version}" >> $GITHUB_OUTPUT
 
     - name: Generate Release Notes
       id: generate_notes
@@ -28,20 +38,23 @@ runs:
         previous_tag="${{ inputs.previous_tag }}"
         repo_url="${{ inputs.repo_url }}"
 
+        # Fetch all commits for processing
         pr_commits=()
         formatted_notes=""
         first_merge_commit_skipped=false
-
-        # Using previous_tag for correct range
         # all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
         all_commits=$(git log HEAD..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
 
+        # Check if there are no commits
         if [ -z "$all_commits" ]; then
           echo "No commits found between ${previous_tag} and HEAD."
           formatted_notes="No new commits"
         else
+          # Process the commit data to capture PR-related commits
           while IFS='|' read -r commit_hash parent_hashes commit_message commit_author commit_email; do
+            # Check for "Merge pull request" in commit message
             if echo "$commit_message" | grep -q "Merge pull request"; then
+              # Skip the first "Merge pull request" commit
               if [ "$first_merge_commit_skipped" = false ]; then
                 first_merge_commit_skipped=true
                 continue
@@ -49,15 +62,24 @@ runs:
 
               pr_number=$(echo "$commit_message" | grep -oE "#[0-9]+")
               pr_link="[${pr_number}](${repo_url}/pull/${pr_number:1})"
+
+              # Extract the parent hashes
               read -r start_commit end_commit <<< "$parent_hashes"
+
+              # Track commits related to this PR
               should_track=false
               while IFS='|' read -r inner_commit_hash inner_rest; do
+                # Start tracking from the end_commit
                 if [[ "$inner_commit_hash" == "$end_commit" ]]; then
                   should_track=true
                 fi
+
+                # Stop tracking at the start_commit
                 if [[ "$inner_commit_hash" == "$start_commit" ]]; then
                   break
                 fi
+
+                # If tracking, add commit to PR-related array
                 if [ "$should_track" = true ]; then
                   pr_commits+=("$inner_commit_hash")
                 fi
@@ -65,8 +87,11 @@ runs:
             fi
           done <<< "$all_commits"
 
+          # Generate output for each commit
           while IFS='|' read -r commit_hash _ commit_message commit_author commit_email; do
             github_author_link="@${commit_author}"
+
+            # Append the PR link if the commit is part of the PR-related commits
             if [[ "$commit_message" == *"Merge pull request"* ]]; then
                 formatted_notes="${formatted_notes}"
             elif [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
@@ -77,10 +102,7 @@ runs:
           done <<< "$all_commits"
         fi
 
+        # Export the formatted notes to the GitHub environment
         echo "release_notes<<EOF" >> $GITHUB_OUTPUT
         echo -e "${formatted_notes}" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-
-  outputs:
-    new_version: ${{ steps.increment_version.outputs.new_version }}
-    release_notes: ${{ steps.generate_notes.outputs.release_notes }}
