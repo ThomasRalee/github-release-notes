@@ -40,8 +40,8 @@ runs:
         # Check if there are no commits
         if [ -z "$all_commits" ]; then
           echo "No commits found between ${previous_tag} and HEAD."
-          formatted_notes="No new commits"
-          echo -e "${formatted_notes}" >> $GITHUB_OUTPUT
+          release_notes="No new commits"
+          echo -e "${release_notes}" >> $GITHUB_OUTPUT
           exit 0
         fi
 
