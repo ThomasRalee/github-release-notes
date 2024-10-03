@@ -112,14 +112,14 @@ runs:
         echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Compute Bugsnag App Version
-        id: compute_bugsnag_app_version
-        run: |
-          if [ "${steps.generate_notes.outputs.release_notes}" == "No new commits" ]; then
-            echo "app_version=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
-          else
-            echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
-          fi
-          echo "release notes: ${{ steps.generate_notes.outputs.release_notes }}"
-          echo "previous version: ${{ inputs.previous_tag }}"
-          echo "new version: ${{ env.new_version }}"
+      id: compute_bugsnag_app_version
+      run: |
+        if [ "${steps.generate_notes.outputs.release_notes}" == "No new commits" ]; then
+          echo "app_version=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
+        else
           echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
+        fi
+        echo "release notes: ${{ steps.generate_notes.outputs.release_notes }}"
+        echo "previous version: ${{ inputs.previous_tag }}"
+        echo "new version: ${{ env.new_version }}"
+        echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
