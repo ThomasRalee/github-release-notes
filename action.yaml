@@ -99,9 +99,10 @@ runs:
         echo -e "${formatted_notes}" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
-  new_version:
-    description: "Incremented github tag number"
-    value: ${{ steps.increment_version.outputs.new_version }}
-  release_notes:
-    description: "Incremented github tag number"
-    value: "${{ steps.generate_notes.outputs.release_notes }}"
+  outputs:
+    new_version:
+      description: "Incremented github tag number"
+      value: ${{ steps.increment_version.outputs.new_version }}
+    release_notes:
+      description: "Incremented github tag number"
+      value: "${{ steps.generate_notes.outputs.release_notes }}"
