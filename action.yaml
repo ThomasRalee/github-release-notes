@@ -121,6 +121,5 @@ runs:
           echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
         fi
         echo "release notes: ${{ steps.generate_notes.outputs.release_notes }}"
-        echo "previous version: ${{ inputs.previous_tag }}"
-        echo "new version: ${{ env.new_version }}"
-        echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
+        echo "bugsnag version: $app_version"
+        echo "app_version=$app_version" >> $GITHUB_OUTPUT
