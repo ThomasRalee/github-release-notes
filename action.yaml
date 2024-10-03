@@ -40,68 +40,65 @@ runs:
         # Check if there are no commits
         if [ -z "$all_commits" ]; then
           echo "No commits found between ${previous_tag} and HEAD."
-          release_notes="No new commits"
-          echo -e "${release_notes}" >> $GITHUB_OUTPUT
-          exit 0
-        fi
+          formatted_notes="No new commits"
+        else
+          # Process the commit data to capture PR-related commits
+          while IFS='|' read -r commit_hash parent_hashes commit_message commit_author commit_email; do
+            # Check for "Merge pull request" in commit message
+            if echo "$commit_message" | grep -q "Merge pull request"; then
+              # Skip the first "Merge pull request" commit
+              if [ "$first_merge_commit_skipped" = false ]; then
+                first_merge_commit_skipped=true
+                continue
+              fi
 
-        # Process the commit data to capture PR-related commits
-        while IFS='|' read -r commit_hash parent_hashes commit_message commit_author commit_email; do
-          # Check for "Merge pull request" in commit message
-          if echo "$commit_message" | grep -q "Merge pull request"; then
-            # Skip the first "Merge pull request" commit
-            if [ "$first_merge_commit_skipped" = false ]; then
-              first_merge_commit_skipped=true
-              continue
+              pr_number=$(echo "$commit_message" | grep -oE "#[0-9]+")
+              pr_link="[${pr_number}](${repo_url}/pull/${pr_number:1})"
+
+              # Extract the parent hashes
+              read -r start_commit end_commit <<< "$parent_hashes"
+
+              # Track commits related to this PR
+              should_track=false
+              while IFS='|' read -r inner_commit_hash inner_rest; do
+                # Start tracking from the end_commit
+                if [[ "$inner_commit_hash" == "$end_commit" ]]; then
+                  should_track=true
+                fi
+
+                # Stop tracking at the start_commit
+                if [[ "$inner_commit_hash" == "$start_commit" ]]; then
+                  break
+                fi
+
+                # If tracking, add commit to PR-related array
+                if [ "$should_track" = true ]; then
+                  pr_commits+=("$inner_commit_hash")
+                fi
+              done <<< "$all_commits"
             fi
+          done <<< "$all_commits"
 
-            pr_number=$(echo "$commit_message" | grep -oE "#[0-9]+")
-            pr_link="[${pr_number}](${repo_url}/pull/${pr_number:1})"
+          # Generate output for each commit
+          while IFS='|' read -r commit_hash _ commit_message commit_author commit_email; do
+            github_author_link="@${commit_author}"
 
-            # Extract the parent hashes
-            read -r start_commit end_commit <<< "$parent_hashes"
-
-            # Track commits related to this PR
-            should_track=false
-            while IFS='|' read -r inner_commit_hash inner_rest; do
-              # Start tracking from the end_commit
-              if [[ "$inner_commit_hash" == "$end_commit" ]]; then
-                should_track=true
-              fi
-
-              # Stop tracking at the start_commit
-              if [[ "$inner_commit_hash" == "$start_commit" ]]; then
-                break
-              fi
-
-              # If tracking, add commit to PR-related array
-              if [ "$should_track" = true ]; then
-                pr_commits+=("$inner_commit_hash")
-              fi
-            done <<< "$all_commits"
-          fi
-        done <<< "$all_commits"
-
-        # Generate output for each commit
-        while IFS='|' read -r commit_hash _ commit_message commit_author commit_email; do
-          github_author_link="@${commit_author}"
-
-          # Append the PR link if the commit is part of the PR-related commits
-          if [[ "$commit_message" == *"Merge pull request"* ]]; then
-              formatted_notes="${formatted_notes}"
-          elif [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
-            formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link} in ${pr_link}"
-          else
-            formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link}"
-          fi
-        done <<< "$all_commits"
+            # Append the PR link if the commit is part of the PR-related commits
+            if [[ "$commit_message" == *"Merge pull request"* ]]; then
+                formatted_notes="${formatted_notes}"
+            elif [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
+              formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link} in ${pr_link}"
+            else
+              formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link}"
+            fi
+          done <<< "$all_commits"
+        fi
 
         # Export the formatted notes to the GitHub environment
         echo "release_notes<<EOF" >> $GITHUB_OUTPUT
         echo -e "${formatted_notes}" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
-outputs:
   new_version:
     description: "Incremented github tag number"
     value: ${{ steps.increment_version.outputs.new_version }}
