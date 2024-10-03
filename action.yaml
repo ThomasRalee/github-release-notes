@@ -115,7 +115,7 @@ runs:
       id: compute_bugsnag_app_version
       shell: bash
       run: |
-        if [ "${steps.generate_notes.outputs.release_notes}" == "No new commits" ]; then
+        if [[ "${{ steps.generate_notes.outputs.release_notes }}" == "No new commits" ]]; then
           echo "app_version=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
         else
           echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
