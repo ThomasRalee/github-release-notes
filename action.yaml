@@ -120,6 +120,9 @@ runs:
         else
           echo "app_version=${{ env.new_version }}" >> $GITHUB_OUTPUT
         fi
-        echo "release notes: ${{ steps.generate_notes.outputs.release_notes }}"
-        echo "bugsnag version: $app_version"
+
         echo "app_version=$app_version" >> $GITHUB_OUTPUT
+
+        # Logging for debug purposes
+        echo "Release notes: ${{ steps.generate_notes.outputs.release_notes }}"
+        echo "Bugsnag version: $app_version"
