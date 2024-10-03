@@ -34,7 +34,16 @@ runs:
         pr_commits=()
         formatted_notes=""
         first_merge_commit_skipped=false
-        all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
+        # all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
+        all_commits=$(git log HEAD..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
+
+        # Check if there are no commits
+        if [ -z "$all_commits" ]; then
+          echo "No commits found between ${previous_tag} and HEAD."
+          formatted_notes="No new commits"
+          echo -e "${formatted_notes}" >> $GITHUB_OUTPUT
+          exit 0
+        fi
 
         # Process the commit data to capture PR-related commits
         while IFS='|' read -r commit_hash parent_hashes commit_message commit_author commit_email; do
