@@ -92,20 +92,19 @@ runs:
 
           # Generate output for each commit
           while IFS='|' read -r commit_hash _ commit_message commit_author commit_email; do
-            github_author_link="@${commit_author}"
             if [[ "$commit_author" =~ \  ]]; then
-              github_author="${commit_author} (${commit_email})"
+                github_author="${commit_author} (${commit_email})"
             else
-              github_author="@${commit_author}"
+                github_author="@${commit_author}"
             fi
 
             # Append the PR link if the commit is part of the PR-related commits
             if [[ "$commit_message" == *"Merge pull request"* ]]; then
                 formatted_notes="${formatted_notes}"
             elif [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
-              formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link} in ${pr_link}"
+              formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author} in ${pr_link}"
             else
-              formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author_link}"
+              formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author}"
             fi
           done <<< "$all_commits"
         fi
