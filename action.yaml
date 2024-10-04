@@ -93,6 +93,11 @@ runs:
           # Generate output for each commit
           while IFS='|' read -r commit_hash _ commit_message commit_author commit_email; do
             github_author_link="@${commit_author}"
+            if [[ "$commit_author" =~ \  ]]; then
+              github_author="${commit_author} (${commit_email})"
+            else
+              github_author="@${commit_author}"
+            fi
 
             # Append the PR link if the commit is part of the PR-related commits
             if [[ "$commit_message" == *"Merge pull request"* ]]; then
