@@ -48,8 +48,6 @@ runs:
         first_merge_commit_skipped=false
         all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
 
-        echo all_commits: $all_commits
-
         # Check if there are no commits
         if [[ -z "$all_commits" || "$all_commits" =~ ^[[:space:]]*$ ]]; then
           echo "No commits found between ${previous_tag} and HEAD."
@@ -109,6 +107,10 @@ runs:
               formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author}"
             fi
           done <<< "$all_commits"
+        fi
+
+        if [[ -z "$formatted_notes" ]]; then
+          formatted_notes="No commits"
         fi
 
         # Export the formatted notes to the GitHub environment
