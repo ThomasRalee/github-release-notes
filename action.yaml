@@ -48,8 +48,10 @@ runs:
         first_merge_commit_skipped=false
         all_commits=$(git log "$previous_tag"..HEAD --pretty=format:"%h|%p|%s|%an|%ae")
 
+        echo all_commits: $all_commits
+
         # Check if there are no commits
-        if [ -z "$all_commits" ]; then
+        if [[ -z "$all_commits" || "$all_commits" =~ ^[[:space:]]*$ ]]; then
           echo "No commits found between ${previous_tag} and HEAD."
           formatted_notes="No new commits"
         else
