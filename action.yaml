@@ -110,7 +110,7 @@ runs:
         fi
 
         if [[ -z "$formatted_notes" ]]; then
-          formatted_notes="No commits"
+          formatted_notes="No new commits"
         fi
 
         # Export the formatted notes to the GitHub environment
