@@ -99,7 +99,7 @@ runs:
             fi
 
             # Append the PR link if the commit is part of the PR-related commits
-            if [[ "$commit_message" == *"Merge pull request"* ]]; then
+            if [[ "$commit_message" == *"Merge pull request"* || "$commit_message" == *"Revert"* ]]; then
                 formatted_notes="${formatted_notes}"
             elif [[ " ${pr_commits[@]} " =~ " ${commit_hash} " ]]; then
               formatted_notes="${formatted_notes}\n- ${commit_hash:0:7} - ${commit_message} by ${github_author} in ${pr_link}"
